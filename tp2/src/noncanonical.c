@@ -75,58 +75,63 @@ int main(int argc, char** argv) {
   char currentByte;
   int i = 0;
 
-  while (STOP == FALSE) {       /* loop for input */
-    int receivedSET = FALSE;
-    setReadState CURRENT_STATE = START;
+  int receivedSET = 0;
+  setReadState CURRENT_STATE = START;
 
+  char message[255];
+
+  while (STOP == FALSE) {       /* loop for input */
     res = read(fd, result, 1);   /* returns after 1 char have been input */
     result[res]=0;
-    if(receivedSET == FALSE) {
+
+    if(receivedSET == 0) {
       printf("Current byte : %s\n", result);
     //  STOP=TRUE;
       switch(CURRENT_STATE) {
         case START:
-          if(currentByte == FLAG)
+          if(result[0] == FLAG)
           CURRENT_STATE = FLAG_RCV;
           printf("Start.");
         break;
 
         case FLAG_RCV:
           printf("Flag received.");
-          if(currentByte == A)
+          if(result[0] == A)
             CURRENT_STATE = A_RCV;
-          else if(currentByte != FLAG)
+          else if(result[0] != FLAG)
             CURRENT_STATE = START;
           break;
 
         case A_RCV:
-          if(currentByte == C_SET)
+          if(result[0] == C_SET)
             CURRENT_STATE = C_RCV;
-          else if(currentByte != FLAG)
+          else if(result[0] != FLAG)
             CURRENT_STATE = START;
             else
             CURRENT_STATE = FLAG_RCV;
           break;
 
         case C_RCV:
-          if(currentByte == A^C_SET)
+          if(result[0] == A^C_SET)
             CURRENT_STATE = BCC_OK;
-            else if(currentByte != FLAG)
+            else if(result[0] != FLAG)
             CURRENT_STATE = START;
           else
             CURRENT_STATE = FLAG_RCV;
           break;
 
         case BCC_OK:
-          if(currentByte == FLAG)
+          if(result[0] == FLAG)
             CURRENT_STATE = STOP_SET;
           else
             CURRENT_STATE = START;
 
         case STOP_SET:
           printf("SET was successfuly received.\n");
-          receivedSET = TRUE;
+          receivedSET = 1;
           write(fd, UA, 5);
+          STOP = TRUE;
+
           break;
         default:
           break;
@@ -140,6 +145,27 @@ int main(int argc, char** argv) {
 
       printf(":%s\n", result);
     }
+
+    //ler o bite lixo?
+    res = read(fd, result, 1);   /* returns after 1 char have been input */
+    result[res]=0;
+    
+
+    STOP=FALSE;
+    char temp[255];
+    while (STOP==FALSE) {       /* loop for input */
+      res = read(fd,temp,255);   /* returns after 5 chars have been input */
+      temp[res] = 0;               /* so we can printf... */
+      printf(":%s:%d\n", temp, res);
+      if (temp[res-1]=='\0') STOP=TRUE;
+      strcat(result,temp);
+    }
+
+    printf("Message: %s.\n", result);
+    tcflush(fd, TCIFLUSH);
+
+    res = write(fd,result,strlen(result)+1);
+    printf("%d bytes written\n", res);
 
 /*
     printf("Message: %s.\n", result);
