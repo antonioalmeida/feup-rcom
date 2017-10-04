@@ -87,93 +87,94 @@ int main(int argc, char** argv)
   int uaReceived = 0;
 
 
-  res = read(fd,buf,1);     /* returns after 1 char have been input */
-  /* value */
-  buf[res]=0;
+  while (connected==0) {
 
-  if(uaReceived == 0){
-    switch(current){
-      case START:
-      if(buf[0] == FLAG)
-      current = FLAG_RCV;
+    res = read(fd,buf,1);
+    buf[res]=0;
 
-      break;
-      case FLAG_RCV:
-      if(buf[0] == A){
-        current = A_RCV;
-      }
-      else if(buf[0] != FLAG)
-      current = START;
-      break;
-      case A_RCV:
-      if(buf[0] == C_UA){
-        current = C_RCV;
-      }
-      else
-      if(buf[0] != FLAG)
-      current = START;
-      else
-      current = FLAG_RCV;
-      break;
-      case C_RCV:
-      if(buf[0] == A^C_UA){
-        current = BCC;
-      }
-      else
-      if(buf[0] != FLAG)
-      current = START;
-      else
-      current = FLAG_RCV;
-      break;
-      case BCC:
-      if(buf[0] == FLAG){
-        current = STOP_UA;
-      }
-      else{
+    if(uaReceived == 0){
+      switch(current){
+        case START:
+        if(buf[0] == FLAG)
+        current = FLAG_RCV;
+
+        break;
+        case FLAG_RCV:
+        if(buf[0] == A){
+          current = A_RCV;
+        }
+        else if(buf[0] != FLAG)
         current = START;
-      }
-      case STOP_UA:
-      uaReceived = 1;
-      connected = 1;
-      printf("Recebeu UA!\n");
-      break;
+        break;
+        case A_RCV:
+        if(buf[0] == C_UA){
+          current = C_RCV;
+        }
+        else
+        if(buf[0] != FLAG)
+        current = START;
+        else
+        current = FLAG_RCV;
+        break;
+        case C_RCV:
+        if(buf[0] == A^C_UA){
+          current = BCC;
+        }
+        else
+        if(buf[0] != FLAG)
+        current = START;
+        else
+        current = FLAG_RCV;
+        break;
+        case BCC:
+        if(buf[0] == FLAG){
+          current = STOP_UA;
+        }
+        else{
+          current = START;
+        }
+        case STOP_UA:
+        uaReceived = 1;
+        connected = 1;
+        printf("Recebeu UA!\n");
+        break;
 
-      default:
-      break;
+        default:
+        break;
+      }
     }
   }
-
 
 
   //Data packets dispatch
 
   if(gets(buf) == NULL) {
-    perror("Error ocurred!");
-    exit(-1);
-  }
+  perror("Error ocurred!");
+  exit(-1);
+}
 
-  res = write(fd,buf,strlen(buf)+1);
-  printf("%d bytes written\n", res);
+res = write(fd,buf,strlen(buf)+1);
+printf("%d bytes written\n", res);
 
-  /*
-  O ciclo FOR e as instru��es seguintes devem ser alterados de modo a respeitar
-  o indicado no gui�o
-  */
-  /*
-  int n = 0;
-  while (STOP==FALSE) {     
-    if((res = read(fd,buf+n++,1)) == 1)
-    if (buf[n]=='\0') STOP=TRUE;
-  }
-
-  printf("%s\n", buf);
-  printf("%d bytes read\n", n+1);
+/*
+O ciclo FOR e as instru��es seguintes devem ser alterados de modo a respeitar
+o indicado no gui�o
 */
-  if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
-    perror("tcsetattr");
-    exit(-1);
-  }
 
-  close(fd);
-  return 0;
+int n = 0;
+while (STOP==FALSE) {
+if((res = read(fd,buf+n++,1)) == 1)
+if (buf[n]=='\0') STOP=TRUE;
+}
+
+printf("%s\n", buf);
+printf("%d bytes read\n", n+1);
+
+if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
+  perror("tcsetattr");
+  exit(-1);
+}
+
+close(fd);
+return 0;
 }
