@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
 }
 
 int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios* newtio){
-	int fd,res;
+	int fd;
 
 	if ( (argc < 2) ||
 			((strcmp("/dev/ttyS0", argv[1])!=0) &&
@@ -90,15 +90,15 @@ int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios
 	}
 
 	bzero(&newtio, sizeof(newtio));
-	newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-	newtio.c_iflag = IGNPAR;
-	newtio.c_oflag = 0;
+	(*newtio).c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+	(*newtio).c_iflag = IGNPAR;
+	(*newtio).c_oflag = 0;
 
 	/* set input mode (non-canonical, no echo,...) */
-	newtio.c_lflag = 0;
+	(*newtio).c_lflag = 0;
 
-	newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-	newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
+	(*newtio).c_cc[VTIME]    = 0;   /* inter-character timer unused */
+	(*newtio).c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 	/*
 	  VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
@@ -123,13 +123,12 @@ int reset_serialPort(int fd,struct termios* oldtio){
 }
 
 int setConnection(int fd){
-	unsigned char SET[5] = {FLAG, A, C_SET, (A^C_SET), FLAG};
 	unsigned char UA[5] = {FLAG, A, C_UA, (A^C_UA), FLAG};
 
 	setReceivedState CURRENT_STATE = START;
 	char buf[255];
 	int res = 0;
-	int i = 0;
+
 	int connected = 0;
 	int setReceived = 0;
 
@@ -174,15 +173,15 @@ int stateMachine(char test, setReceivedState* CURRENT_STATE){
 				*CURRENT_STATE = FLAG_RCV;
 		break;
 	case C_RCV:
-		if(test == A^C_SET)
-			*CURRENT_STATE = BCC;
+		if(test == (A^C_SET))
+			*CURRENT_STATE = BCC_OK;
 		else
 			if(test != FLAG)
 				*CURRENT_STATE = START;
 			else
 				*CURRENT_STATE = FLAG_RCV;
 		break;
-	case BCC:
+	case BCC_OK:
 		if(test == FLAG)
 			*CURRENT_STATE = STOP_SET;
 		else
@@ -200,7 +199,6 @@ int stateMachine(char test, setReceivedState* CURRENT_STATE){
 }
 
 int read_write_message(int fd){
-	int n = 0;
 	int res=0;
 	char buf[255];
 	char result[255];
@@ -224,9 +222,3 @@ int read_write_message(int fd){
 
 	return 0;
 }
-
-void atende(){
-	flag=1;
-	timer++;
-}
-

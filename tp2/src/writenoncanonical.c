@@ -65,8 +65,7 @@ int main(int argc, char** argv)
 }
 
 int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios* newtio){
-	int fd,res;
-
+	int fd;
 
 	if ( (argc < 2) ||
 			((strcmp("/dev/ttyS0", argv[1])!=0) &&
@@ -90,16 +89,16 @@ int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios
 		return -1;
 	}
 
-	bzero(&newtio, sizeof(newtio));
-	newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-	newtio.c_iflag = IGNPAR;
-	newtio.c_oflag = 0;
+	bzero(newtio, sizeof(*newtio));
+	(*newtio).c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+	(*newtio).c_iflag = IGNPAR;
+	(*newtio).c_oflag = 0;
 
 	/* set input mode (non-canonical, no echo,...) */
-	newtio.c_lflag = 0;
+	(*newtio).c_lflag = 0;
 
-	newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-	newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
+	(*newtio).c_cc[VTIME]    = 0;   /* inter-character timer unused */
+	(*newtio).c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 	/*
 	  VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
@@ -125,7 +124,6 @@ int reset_serialPort(int fd,struct termios* oldtio){
 
 int setConnection(int fd){
 	unsigned char SET[5] = {FLAG, A, C_SET, (A^C_SET), FLAG};
-	unsigned char UA[5] = {FLAG, A, C_UA, (A^C_UA), FLAG};
 
 	uaReceivedState current = START;
 	write(fd, SET, 5); //SET packet sent
@@ -174,7 +172,7 @@ int stateMachine(char test, uaReceivedState* current){
 				*current = FLAG_RCV;
 		break;
 	case C_RCV:
-		if(test == A^C_UA)
+		if(test == (A^C_UA))
 			*current = BCC;
 		else
 			if(test != FLAG)
