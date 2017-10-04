@@ -22,20 +22,19 @@ int main(int argc, char** argv)
     struct termios oldtio,newtio;
     char buf[255];
 
-    if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
+    if ( (argc < 2) ||
+  	     ((strcmp("/dev/ttyS0", argv[1])!=0) &&
   	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
 
-
   /*
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
   */
-  
-    
+
+
     fd = open(argv[1], O_RDWR | O_NOCTTY );
     if (fd <0) {perror(argv[1]); exit(-1); }
 
@@ -55,14 +54,10 @@ int main(int argc, char** argv)
     newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
     newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
-
-
-  /* 
-    VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
+  /*
+    VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
     leitura do(s) pr�ximo(s) caracter(es)
   */
-
-
 
     tcflush(fd, TCIOFLUSH);
 
@@ -73,29 +68,27 @@ int main(int argc, char** argv)
 
     printf("New termios structure set\n");
 
-    char cenas[255];
-	
+    char result[255];
+
     while (STOP==FALSE) {       /* loop for input */
       res = read(fd,buf,255);   /* returns after 5 chars have been input */
-      buf[res]=0;               /* so we can printf... */
+      buf[res] = 0;               /* so we can printf... */
       printf(":%s:%d\n", buf, res);
       if (buf[res-1]=='\0') STOP=TRUE;
-	strcat(cenas,buf);
+			strcat(result,buf);
     }
 
-    printf("Message: %s.\n", cenas);
-    cenas[strlen(cenas)+1]='\0';
-    res = write(fd,cenas,strlen(cenas)+1);   
+    printf("Message: %s.\n", result);
+		tcflush(fd, TCIFLUSH);
+
+    res = write(fd,result,strlen(result)+1);
     printf("%d bytes written\n", res);
 
-  /* 
-    O ciclo WHILE deve ser alterado de modo a respeitar o indicado no gui�o 
+  /*
+    O ciclo WHILE deve ser alterado de modo a respeitar o indicado no gui�o
   */
-
-
 
     tcsetattr(fd,TCSANOW,&oldtio);
     close(fd);
     return 0;
 }
-
