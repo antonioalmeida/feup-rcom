@@ -4,17 +4,14 @@
 
 int flag=1, conta=1;
 
-void atende()                   // atende alarme
-{
+void atende() { // atende alarme
 	printf("alarme # %d\n", conta);
 	flag=1;
 	conta++;
 }
 
 
-main()
-{
-
+main(){
 	(void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
 
 	while(conta < 4){
