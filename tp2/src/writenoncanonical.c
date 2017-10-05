@@ -129,7 +129,6 @@ int setConnection(int fd){
 	write(fd, SET, 5); //SET packet sent
 
 	int connected = 0;
-	int uaReceived = 0;
 	char buf[255];
 	int res = 0;
 
@@ -138,12 +137,9 @@ int setConnection(int fd){
 		res = read(fd,buf,1);
 		buf[res]=0;
 
-		if(uaReceived == 0){
-			uaReceived = stateMachine(buf[0], &current);
-		} else {
-			connected = 1;
+		connected = stateMachine(buf[0], &current);
 		}
-	}
+
 
 	return 0;
 
@@ -181,13 +177,15 @@ int stateMachine(char test, uaReceivedState* current){
 				*current = FLAG_RCV;
 		break;
 	case BCC:
-		if(test == FLAG)
+		if(test == FLAG){
 			*current = STOP_UA;
+			printf("UA was sucessfuly received!\n");
+			return 1;
+		}
 		else
 			*current = START;
 		break;
 	case STOP_UA:
-		printf("UA was sucessfuly received!\n");
 		return 1;
 		break;
 	default:
@@ -201,6 +199,7 @@ int stateMachine(char test, uaReceivedState* current){
 int write_message(int fd){
 	char buf[255];
 	int res=0;
+
 	if(gets(buf) == NULL) {
 		perror("Error ocurred on getting the message!");
 		return -1;
@@ -215,19 +214,15 @@ int write_message(int fd){
 int read_message(int fd){
 	int n = 0;
 	int res=0;
-	char buf[255];
+	char result[255];
 
+	STOP=FALSE;
 	while (STOP==FALSE) {
-		if((res = read(fd,buf+n++,1)) == 1){
-			if (buf[n]=='\0') STOP=TRUE;
-		}
-		else if (res == -1){
-			printf("Error: can't read from serial port\n");
-			return -1;
-		}
+		res = read(fd,result+n++,1);
+			if (result[n]=='\0') STOP=TRUE;
 	}
 
-	printf("%s\n", buf);
+	printf("%s\n", result);
 	printf("%d bytes read\n", n+1);
 
 	return 0;
