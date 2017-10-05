@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -28,6 +29,7 @@ typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC, STOP_UA}uaReceivedState;
 int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios* newtio);
 int reset_serialPort(int fd, struct termios* oldtio);
 int setConnection(int fd);
+int timeout_setConnection(int fd);
 int stateMachine(char test, uaReceivedState* current);
 int write_message(int fd);
 int read_message(int fd);
@@ -46,7 +48,7 @@ int main(int argc, char** argv)
 	}
 
 	//Estabilishing connection
-	setConnection(fd);
+	timeout_setConnection(fd);
 
 	//Ready do send a message
 	if((error = write_message(fd)) == -1)
@@ -146,6 +148,42 @@ int setConnection(int fd){
 
 }
 
+int timeout_setConnection(int fd){
+	unsigned char SET[5] = {FLAG, A, C_SET, (A^C_SET), FLAG};
+	
+	(void) signal(SIGALRM, atende);
+	uaReceivedState current = START;
+	write(fd, SET, 5); //SET packet sent
+
+	int connected = 0;
+	char buf[255];
+	int res = 0;
+
+	int j;			
+	for(j=0; j <= MAX_TRIES; j++){	
+		if(connected == 1)
+		break;
+
+	//Receive UA packet and check if it's correct
+	while (timer < 4 && connected == 0) {
+
+		if(flag){
+      		alarm(3);  // activa alarme de 3s
+      		flag=0;
+		}
+
+		res = read(fd,buf,1);
+		buf[res]=0;
+
+		connected = stateMachine(buf[0], &current);
+
+		}
+	}
+
+	return 0;
+
+}
+
 
 int stateMachine(char test, uaReceivedState* current){
 	switch(*current){
@@ -181,12 +219,14 @@ int stateMachine(char test, uaReceivedState* current){
 		if(test == FLAG){
 			*current = STOP_UA;
 			printf("UA was sucessfuly received!\n");
+			flag = 1;
 			return 1;
 		}
 		else
 			*current = START;
 		break;
 	case STOP_UA:
+		flag = 1;
 		return 1;
 		break;
 	default:
