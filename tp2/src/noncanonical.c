@@ -45,14 +45,6 @@ int main(int argc, char** argv) {
 	//Estabilishing connection
 	setConnection(fd);
 
-	/*
-	 * //ler o byte lixo?
-	 char result[255];
-	 int res=0;
-	res = read(fd, result, 1);
-	result[res]=0;
-	 */
-
 	//Ready do read a message and send back
 	if((error = read_write_message(fd)) == -1)
 		exit(error);
@@ -89,7 +81,7 @@ int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios
 		return -1;
 	}
 
-	bzero(&newtio, sizeof(newtio));
+	bzero(newtio, sizeof(*newtio));
 	(*newtio).c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
 	(*newtio).c_iflag = IGNPAR;
 	(*newtio).c_oflag = 0;
@@ -130,19 +122,15 @@ int setConnection(int fd){
 	int res = 0;
 
 	int connected = 0;
-	int setReceived = 0;
+	
 
 	//Receive SET packet and check if it's correct
 	while(connected == 0){
 		res = read(fd, buf, 1);
 		buf[res]=0;
 
-		if(setReceived == 0){
-			setReceived = stateMachine(buf[0], &CURRENT_STATE);
-		} else {
-			connected = 1;
-		}
-
+		connected = stateMachine(buf[0], &CURRENT_STATE);
+			
 	}
 
 	write(fd, UA, 5); //Sent UA packet
@@ -182,42 +170,44 @@ int stateMachine(char test, setReceivedState* CURRENT_STATE){
 				*CURRENT_STATE = FLAG_RCV;
 		break;
 	case BCC_OK:
-		if(test == FLAG)
+		if(test == FLAG){
 			*CURRENT_STATE = STOP_SET;
+			printf("SET was sucessfuly received!\n");
+			return 1;
+}
 		else
 			*CURRENT_STATE = START;
 		break;
 	case STOP_SET:
-		printf("SET was sucessfuly received!\n");
 		return 1;
 		break;
 	default:
 		break;
 	}
-
+	
 	return 0;
 }
 
 int read_write_message(int fd){
+
 	int res=0;
 	char buf[255];
-	char result[255];
+	char temp[255] = {0};
 
 	STOP=FALSE;
 
 	while (STOP==FALSE) {
-		res = read(fd,buf,255);   /* returns after 5 chars have been input */
-		buf[res] = 0;               /* so we can printf... */
-		printf(":%s:%d\n", buf, res);
+		res = read(fd,buf,255);
+		buf[res] = 0;             
 		if (buf[res-1]=='\0') STOP=TRUE;
-		strcat(result,buf);
+		strcat(temp,buf);
 	}
 
-	printf("%s\n", result);
+	printf("Message: %s\n", temp);
 
 	tcflush(fd, TCIFLUSH);
 
-	res = write(fd,result,strlen(result)+1);
+	res = write(fd,temp,strlen(temp)+1);
 	printf("%d bytes written\n", res);
 
 	return 0;
