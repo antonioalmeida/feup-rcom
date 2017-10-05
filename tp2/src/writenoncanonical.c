@@ -138,6 +138,7 @@ int setConnection(int fd){
 		buf[res]=0;
 
 		connected = stateMachine(buf[0], &current);
+
 		}
 
 
@@ -204,7 +205,7 @@ int write_message(int fd){
 		perror("Error ocurred on getting the message!");
 		return -1;
 	}
-
+	
 	res = write(fd,buf,strlen(buf)+1);
 	printf("%d bytes written\n", res);
 
