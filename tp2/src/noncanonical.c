@@ -192,22 +192,22 @@ int read_write_message(int fd){
 
 	int res=0;
 	char buf[255];
-	char result[255];
+	char temp[255] = {0};
 
 	STOP=FALSE;
 
 	while (STOP==FALSE) {
 		res = read(fd,buf,255);
-		buf[res] = 0;               
+		buf[res] = 0;             
 		if (buf[res-1]=='\0') STOP=TRUE;
-		strcat(result,buf);
+		strcat(temp,buf);
 	}
 
-	printf("Message: %s\n", result);
+	printf("Message: %s\n", temp);
 
 	tcflush(fd, TCIFLUSH);
 
-	res = write(fd,result,strlen(result)+1);
+	res = write(fd,temp,strlen(temp)+1);
 	printf("%d bytes written\n", res);
 
 	return 0;
