@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 	int error = 0;
 	//Set the serial port to right config
 	int fd=set_serialPort(argc, argv,&oldtio,&newtio);
-	if(fd != 1 || fd != -1 ){
+	if(fd != 1 && fd != -1 ){
 		printf("New termios structure set\n");
 	}else{
 		exit(fd);
@@ -150,7 +150,7 @@ int setConnection(int fd){
 
 int timeout_setConnection(int fd){
 	unsigned char SET[5] = {FLAG, A, C_SET, (A^C_SET), FLAG};
-	
+
 	(void) signal(SIGALRM, atende);
 	uaReceivedState current = START;
 	write(fd, SET, 5); //SET packet sent
@@ -159,8 +159,8 @@ int timeout_setConnection(int fd){
 	char buf[255];
 	int res = 0;
 
-	int j;			
-	for(j=0; j <= MAX_TRIES; j++){	
+	int j;
+	for(j=0; j <= MAX_TRIES; j++){
 		if(connected == 1)
 		break;
 
@@ -245,7 +245,7 @@ int write_message(int fd){
 		perror("Error ocurred on getting the message!");
 		return -1;
 	}
-	
+
 	res = write(fd,buf,strlen(buf)+1);
 	printf("%d bytes written\n", res);
 
