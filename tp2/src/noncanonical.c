@@ -35,8 +35,9 @@ int main(int argc, char** argv) {
 	struct termios oldtio,newtio;
 	int error = 0;
 	//Set the serial port to right config
-	int fd=set_serialPort(argc, argv,&oldtio,&newtio);
-	if(fd != 1 || fd != -1 ){
+	int fd = set_serialPort(argc, argv,&oldtio,&newtio);
+
+	if(fd != 1 && fd != -1 ){
 		printf("New termios structure set\n");
 	}else{
 		exit(fd);
@@ -63,7 +64,7 @@ int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios
 			((strcmp("/dev/ttyS0", argv[1])!=0) &&
 					(strcmp("/dev/ttyS1", argv[1])!=0) )) {
 		printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS0\n");
-		return 1;
+		return -1;
 	}
 
 	/*
@@ -71,7 +72,7 @@ int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios
 	  because we don't want to get killed if linenoise sends CTRL-C.
 	 */
 
-	if ((fd = open(argv[1], O_RDWR | O_NOCTTY )) <0) {
+	if ((fd = open(argv[1], O_RDWR | O_NOCTTY )) < 0) {
 		perror(argv[1]);
 		return -1;
 	}
@@ -103,6 +104,7 @@ int set_serialPort(int argc, char** argv, struct termios* oldtio, struct termios
 		perror("tcsetattr");
 		return -1;
 	}
+
 	return fd;
 }
 
@@ -122,15 +124,13 @@ int setConnection(int fd){
 	int res = 0;
 
 	int connected = 0;
-	
 
 	//Receive SET packet and check if it's correct
-	while(connected == 0){
+	while(connected == FALSE){
 		res = read(fd, buf, 1);
 		buf[res]=0;
 
-		connected = stateMachine(buf[0], &CURRENT_STATE);
-			
+		connected = stateMachine(buf[0], &CURRENT_STATE);	
 	}
 
 	write(fd, UA, 5); //Sent UA packet
@@ -173,19 +173,19 @@ int stateMachine(char test, setReceivedState* CURRENT_STATE){
 		if(test == FLAG){
 			*CURRENT_STATE = STOP_SET;
 			printf("SET was sucessfuly received!\n");
-			return 1;
+			return TRUE;
 }
 		else
 			*CURRENT_STATE = START;
 		break;
 	case STOP_SET:
-		return 1;
+		return TRUE;
 		break;
 	default:
 		break;
 	}
 	
-	return 0;
+	return FALSE;
 }
 
 int read_write_message(int fd){
@@ -194,9 +194,9 @@ int read_write_message(int fd){
 	char buf[255];
 	char temp[255] = {0};
 
-	STOP=FALSE;
+	STOP = FALSE;
 
-	while (STOP==FALSE) {
+	while (STOP == FALSE) {
 		res = read(fd,buf,255);
 		buf[res] = 0;             
 		if (buf[res-1]=='\0') STOP=TRUE;
