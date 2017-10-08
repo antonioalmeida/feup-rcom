@@ -1,7 +1,6 @@
-#include "applicationLayerh.h"
+#include "applicationLayer.h"
 
-int llopen(int porta, TRANSMITTER | RECEIVER){
-
+int llopen(int porta, int status) {
 
 }
 

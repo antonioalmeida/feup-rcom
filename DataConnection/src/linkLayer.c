@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include "linkLayer.h"
+
+int flag = 1; //Not sure why we need this but ok
+
 int receiveSETStateMachine(char input, setReceivedState* CURRENT_STATE) {
 	switch(*CURRENT_STATE) {
 	case SET_START:
@@ -43,51 +48,51 @@ int receiveSETStateMachine(char input, setReceivedState* CURRENT_STATE) {
 	default:
 		break;
 	}
-	
+
 	return FALSE;
 }
  // TO DO: update these values
 int receiveUAStateMachine(char input, uaReceivedState* CURRENT_STATE) {
 	switch(*CURRENT_STATE) {
-		case START:
+		case UA_START:
 			if(input == FLAG)
-				*CURRENT_STATE = FLAG_RCV;
+				*CURRENT_STATE = UA_FLAG_RCV;
 			break;
-		case FLAG_RCV:
+		case UA_FLAG_RCV:
 			if(input == A)
-				*CURRENT_STATE = A_RCV;
+				*CURRENT_STATE = UA_A_RCV;
 			else if(input != FLAG)
-				*CURRENT_STATE = START;
+				*CURRENT_STATE = UA_START;
 			break;
-		case A_RCV:
+		case UA_A_RCV:
 			if(input == C_UA)
-				*CURRENT_STATE = C_RCV;
+				*CURRENT_STATE = UA_C_RCV;
 			else
 				if(input != FLAG)
-					*CURRENT_STATE = START;
+					*CURRENT_STATE = UA_START;
 			else
-				*CURRENT_STATE = FLAG_RCV;
+				*CURRENT_STATE = UA_FLAG_RCV;
 			break;
-		case C_RCV:
+		case UA_C_RCV:
 			if(input == (A^C_UA))
-				*CURRENT_STATE = BCC;
+				*CURRENT_STATE = UA_BCC_OK;
 			else
 				if(input != FLAG)
-					*CURRENT_STATE = START;
+					*CURRENT_STATE = UA_START;
 				else
-					*CURRENT_STATE = FLAG_RCV;
+					*CURRENT_STATE = UA_FLAG_RCV;
 			break;
-		case BCC:
+		case UA_BCC_OK:
 			if(input == FLAG){
-				*CURRENT_STATE = STOP_UA;
+				*CURRENT_STATE = UA_STOP;
 				printf("UA was sucessfuly received!\n");
 				flag = 1;
 				return TRUE;
 			}
 			else
-				*CURRENT_STATE = START;
+				*CURRENT_STATE = UA_START;
 			break;
-			case STOP_UA:
+			case UA_STOP:
 				flag = 1;
 				return TRUE;
 				break;

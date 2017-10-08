@@ -1,5 +1,4 @@
 /*Non-Canonical Input Processing*/
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -9,6 +8,7 @@
 #include <string.h>
 #include <signal.h>
 #include "linkLayer.h"
+#include "applicationLayer.h"
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -26,15 +26,11 @@ int STATUS = -1; // Transmitter or receiver
 
 int timer=1, flag=1;
 
-typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC, STOP_UA} uaReceivedState;
-typedef enum { START, FLAG_RCV, A_RCV, C_RCV, BCC_OK, STOP_SET } setReceivedState;
-
 int checkArgs(int argc, char** argv);
-int initSerialPort(struct termios* oldtio, struct termios* newtio);
+int initSerialPort(char** argv, struct termios* oldtio, struct termios* newtio);
 int resetSerialPort(int fd, struct termios* oldtio);
 int setConnection(int fd);
 int testConnectionTimeout(int fd);
-int receiveUAStateMachine(char test, uaReceivedState* current);
 
 int writeMessage(int fd);
 int readMessage(int fd);
@@ -52,7 +48,7 @@ int main(int argc, char** argv) {
 	}
 
 	//Initialize the serial port with proper configurations
-	int fd = initSerialPort(&oldtio,&newtio);
+	int fd = initSerialPort(argv, &oldtio,&newtio);
 
 	if(fd != 1 && fd != -1 )
 		printf("New termios structure set\n");
@@ -83,23 +79,25 @@ int main(int argc, char** argv) {
 int checkArgs(int argc, char** argv) {
 
 	if ( (argc < 3) ||
-		((strcmp("write", argv[1]) != 0) && 
-		(strcmp("read", argv[1]) != 0)
+		((strcmp("write", argv[1]) != 0) &&
+		(strcmp("read", argv[1]) != 0) &&
 		(strcmp("/dev/ttyS0", argv[2]) != 0) &&
 		(strcmp("/dev/ttyS1", argv[2])!=0) )) {
 			printf("Usage:\tnserial SerialPort\n\tex: nserial <read/write> /dev/ttyS0\n");
 			return -1;
 		}
 
-	if((strcmp("write", argv[1]) == 0))
+	if((strcmp("write", argv[1]) == 0)) {
 		return TRANSMITTER;
-	else if((strcmp("read", argv[1]) == 0))
+	}
+	else if((strcmp("read", argv[1]) == 0)) {
 		return RECEIVER;
-		
+	}
+
 	return -1;
 }
 
-int initSerialPort(struct termios* oldtio, struct termios* newtio){
+int initSerialPort(char** argv, struct termios* oldtio, struct termios* newtio){
 	int fd;
 
 	/*
@@ -153,7 +151,7 @@ int resetSerialPort(int fd,struct termios* oldtio){
 int setConnection(int fd) {
 	unsigned char SET[5] = {FLAG, A, C_SET, (A^C_SET), FLAG};
 
-	uaReceivedState current = START;
+	uaReceivedState current = UA_START;
 	write(fd, SET, 5); //SET packet sent
 
 	int connected = 0;
@@ -176,7 +174,7 @@ int testConnectionTimeout(int fd){
 	unsigned char SET[5] = {FLAG, A, C_SET, (A^C_SET), FLAG};
 
 	(void) signal(SIGALRM, atende);
-	uaReceivedState current = START;
+	uaReceivedState current = UA_START;
 	write(fd, SET, 5); //SET packet sent
 
 	int connected = 0;
@@ -189,25 +187,23 @@ int testConnectionTimeout(int fd){
 			break;
 
 	//Receive UA packet and check if it's correct
-		while (timer < 4 && connected == FALSE) {
+	while (timer < 4 && connected == FALSE) {
 
-			if(flag){
-      		alarm(3);  // activa alarme de 3s
-      		flag=0;
-      	}
+		if(flag){
+			alarm(3);  // activa alarme de 3s
+			flag=0;
+		}
 
-      	res = read(fd,buf,1);
-      	buf[res]=0;
+		res = read(fd,buf,1);
+		buf[res]=0;
 
-      	connected = receiveUAStateMachine(buf[0], &current);
-
-      }
+		connected = receiveUAStateMachine(buf[0], &current);
+	}
   }
 
   return 0;
 
 }
-
 
 int writeMessage(int fd){
 	char buf[255];
