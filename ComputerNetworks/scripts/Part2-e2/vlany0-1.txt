@@ -1,0 +1,38 @@
+// Create vlany0
+
+configure terminal
+vlan y0
+end
+show vlan yd y0
+
+//Add Corresponding ports
+//configure port1
+configure terminal
+interface fastethernet 0/#  //# Means the number of port in vlan correspondig tuxy1
+switchport mode access
+switchport access vlany0
+end
+show
+show
+
+//configure port 254
+
+interface fastethernet 0/# //# Number of port in vlan correspondig tuxy4
+
+
+// Create vlany1
+
+configure terminal
+vlan y1
+end
+show vlan yd y1
+
+//Add Corresponding ports
+//configure port1
+configure terminal
+interface fastethernet 0/#  //# Means the number of port in vlan correspondig tuxy2
+switchport mode access
+switchport access vlany0
+end
+show
+show
